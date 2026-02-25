@@ -137,7 +137,8 @@ export class Menu {
         }
     }
 
-    setStatus(text) {
+    setStatus(text, isError = false) {
         this.lobbyStatus.textContent = text;
+        this.lobbyStatus.style.color = isError ? '#ff3366' : '';
     }
 }

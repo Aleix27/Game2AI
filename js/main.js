@@ -107,7 +107,11 @@ class Game {
 
         this.net.onError = (err) => {
             console.error('Network error:', err);
-            this.menu.setStatus('Connection error. Try again.');
+            let msg = 'Connection error.';
+            if (err.type === 'peer-unavailable') msg = 'Room not found. Check the code.';
+            if (err.type === 'network') msg = 'Network unreachable. Check your internet.';
+            if (err.type === 'browser-incompatible') msg = 'Browser not supported.';
+            this.menu.setStatus(msg, true);
         };
     }
 
