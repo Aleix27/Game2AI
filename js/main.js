@@ -12,7 +12,7 @@ import { Planet, generateMap } from './entities/Planet.js';
 import { Player } from './entities/Player.js';
 import { Projectile } from './entities/Projectile.js';
 import { Meteorite } from './entities/Meteorite.js';
-import { Pickup } from './entities/Pickup.js';
+import { Pickup, PICKUP_TYPES } from './entities/Pickup.js';
 import { ParticlePool } from './entities/Particle.js';
 
 import { GravitySystem } from './systems/GravitySystem.js';
@@ -255,11 +255,13 @@ class Game {
         const spawnPlanets = this.planets.slice(1); // Skip central planet
 
         for (let i = 0; i < this.lobbyPlayers.length; i++) {
+            const lp = this.lobbyPlayers[i];
             const player = new Player(
-                this.lobbyPlayers[i].peerId || 'host',
+                lp.peerId || 'host',
+                lp.name,
+                lp.color,
                 i
             );
-            player.name = this.lobbyPlayers[i].name;
             const spawnPlanet = spawnPlanets[i % spawnPlanets.length];
             const spawnAngle = -Math.PI / 2; // Top of planet
             player.spawn(spawnPlanet, spawnAngle);
@@ -425,12 +427,12 @@ class Game {
         this.pickupSpawnTimer -= dt;
         if (this.pickupSpawnTimer <= 0) {
             this.pickupSpawnTimer = 10; // Every 10 seconds
-            if (this.pickups.filter(p => p.active).length < 5) {
+            if (this.pickups.filter(p => p.active).length < 8) {
                 const planet = this.planets[Math.floor(Math.random() * this.planets.length)];
                 const angle = Math.random() * Math.PI * 2;
                 const pos = planet.getSurfacePoint(angle);
-                const types = Object.keys(Pickup.PICKUP_TYPES || {}); // Fallback if not static
-                const type = ['HEALTH', 'MACHINE_GUN', 'SNIPER'][Math.floor(Math.random() * 3)];
+                const typeArr = ['HEALTH', 'MACHINE_GUN', 'SNIPER', 'SHOTGUN'];
+                const type = typeArr[Math.floor(Math.random() * typeArr.length)];
                 const id = 'pickup_' + Date.now() + '_' + Math.random();
                 // Adjust position to be slightly above planet
                 const dir = new Vec2(pos.x - planet.x, pos.y - planet.y).normalize();
@@ -449,7 +451,14 @@ class Game {
                 if (dist < player.radius + pickup.radius) {
                     pickup.active = false;
                     this._handlePickupEffect(player, pickup);
-                    this.hostState.broadcastEvent({ type: 'pickup', playerId: player.id, pickupId: pickup.id, pickupType: pickup.typeKey });
+                    this.hostState.broadcastEvent({
+                        type: 'pickup',
+                        playerId: player.id,
+                        pickupId: pickup.id,
+                        pickupType: pickup.typeKey,
+                        x: pickup.x,
+                        y: pickup.y
+                    });
                 }
             }
         }
@@ -484,7 +493,9 @@ class Game {
             }
 
             if (!player.alive && player.respawnTimer <= 0) {
-                const spawnPlanet = this.planets[1 + (player.index % (this.planets.length - 1))];
+                // Safety check for planet length
+                const planetIdx = this.planets.length > 1 ? 1 + (player.index % (this.planets.length - 1)) : 0;
+                const spawnPlanet = this.planets[planetIdx];
                 const angle = Math.random() * Math.PI * 2;
                 player.spawn(spawnPlanet, angle);
             }

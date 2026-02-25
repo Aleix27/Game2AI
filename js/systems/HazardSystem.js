@@ -17,7 +17,7 @@ export class HazardSystem {
         this.showerActive = false;
         this.showerDuration = 5;
         this.showerElapsed = 0;
-        this.mapRadius = 700; // how far from center to spawn meteorites
+        this.mapRadius = 1500; // how far from center to spawn meteorites
     }
 
     /**
