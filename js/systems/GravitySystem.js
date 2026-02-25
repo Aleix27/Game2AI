@@ -1,5 +1,5 @@
 // =============================================
-// GravitySystem.js — Multi-body gravity simulation
+// GravitySystem.js — Multi-body gravity simulation (rewritten)
 // =============================================
 
 import { Vec2, Physics } from '../engine/Physics.js';
@@ -43,7 +43,7 @@ export class GravitySystem {
 
         if (entity.isGrounded !== undefined) {
             // Player-specific ground logic
-            this._handlePlayerGravity(entity, nearest, nearestDist, totalAccel, dt);
+            this._handlePlayerGravity(entity, nearest, nearestDist, totalAccel, planets, dt);
         } else {
             // Simple entity (projectile, meteorite)
             entity.vx += totalAccel.x * dt;
@@ -51,22 +51,27 @@ export class GravitySystem {
         }
     }
 
-    _handlePlayerGravity(player, nearestPlanet, dist, accel, dt) {
+    _handlePlayerGravity(player, nearestPlanet, dist, accel, planets, dt) {
         if (!nearestPlanet) return;
 
+        // ───────────────────────────────────────
+        // CAN WE LAND? Only if jumpGraceTimer has expired
+        // ───────────────────────────────────────
+        const canLand = player.jumpGraceTimer <= 0;
         const onSurface = dist <= this.surfaceThreshold;
 
-        if (onSurface && !player.isGrounded) {
+        if (onSurface && !player.isGrounded && canLand) {
             // Landing
             player.isGrounded = true;
-            player.groundedPlanetIndex = -1; // Will be set by game
-            // Kill velocity
+            player.groundedPlanetIndex = -1;
             player.vx *= 0.3;
             player.vy *= 0.3;
         }
 
         if (player.isGrounded) {
-            // Stick to surface
+            // ───────────────────────────────────────
+            // GROUNDED: stick to surface, allow walking
+            // ───────────────────────────────────────
             const surfPoint = Physics.projectToSurface(
                 new Vec2(player.x, player.y),
                 nearestPlanet
@@ -79,9 +84,29 @@ export class GravitySystem {
             );
 
             // Surface movement
+            let currentMoveSpeed = player.moveSpeed;
+            let currentFriction = this.surfaceFriction;
+
+            // --- BIOME EFFECTS ---
+            if (nearestPlanet.themeKey === 'ice') {
+                currentFriction = 0.98; // Slippery
+            } else if (nearestPlanet.themeKey === 'desert') {
+                currentMoveSpeed = player.moveSpeed * 0.6; // Sand slows you down
+            } else if (nearestPlanet.themeKey === 'lava') {
+                // Take burn damage over time (5 dmg per second)
+                if (Math.random() < dt * 5) {
+                    player.takeDamage(1, 'lava');
+                }
+            } else if (nearestPlanet.themeKey === 'forest') {
+                // Heal slowly (5 hp per second)
+                if (player.health < player.maxHealth && Math.random() < dt * 5) {
+                    player.health++;
+                }
+            }
+
             if (Math.abs(player.moveX) > 0.1) {
                 const moveDir = player.moveX > 0 ? 1 : -1;
-                const angularSpeed = (player.moveSpeed / nearestPlanet.radius) * dt;
+                const angularSpeed = (currentMoveSpeed / nearestPlanet.radius) * dt;
                 player.surfaceAngle += angularSpeed * moveDir;
 
                 const newPos = nearestPlanet.getSurfacePoint(player.surfaceAngle);
@@ -91,10 +116,12 @@ export class GravitySystem {
             }
 
             // Dampen velocity on surface
-            player.vx *= this.surfaceFriction;
-            player.vy *= this.surfaceFriction;
+            player.vx *= currentFriction;
+            player.vy *= currentFriction;
         } else {
-            // In air — apply gravity
+            // ───────────────────────────────────────
+            // IN AIR: apply gravity & move
+            // ───────────────────────────────────────
             player.vx += accel.x * dt;
             player.vy += accel.y * dt;
             player.x += player.vx * dt;
@@ -117,8 +144,8 @@ export class GravitySystem {
             player.vx = vel.x;
             player.vy = vel.y;
 
-            // Check if entered planet
-            if (nearestPlanet.isInside(player.x, player.y)) {
+            // If fully inside a planet and grace is over, push out + ground
+            if (canLand && nearestPlanet.isInside(player.x, player.y)) {
                 const surfPoint = Physics.projectToSurface(
                     new Vec2(player.x, player.y),
                     nearestPlanet
@@ -136,7 +163,16 @@ export class GravitySystem {
      * Handle player jump
      */
     jump(player, nearestPlanet) {
-        if (!player.isGrounded || !player.canJump || player.jumpCooldown > 0) return false;
+        if (!player.isGrounded) {
+            // console.log("Jump failed: not grounded");
+            return false;
+        }
+        if (!player.canJump) {
+            // console.log("Jump failed: cannot jump");
+            return false;
+        }
+
+        console.log(`[JUMP] Player ${player.id} jumping from planet. Start pos: ${player.x.toFixed(1)}, ${player.y.toFixed(1)}`);
 
         // Jump direction: away from planet surface
         const jumpDir = new Vec2(
@@ -144,10 +180,23 @@ export class GravitySystem {
             player.y - nearestPlanet.y
         ).normalize();
 
-        player.vx += jumpDir.x * player.jumpForce;
-        player.vy += jumpDir.y * player.jumpForce;
+        // Biome effect: Crystal planets give super jumps (low gravity style)
+        const jumpMultiplier = nearestPlanet.themeKey === 'crystal' ? 1.5 : 1.0;
+
+        // Set velocity directly (not additive) for reliable liftoff
+        player.vx = jumpDir.x * player.jumpForce * jumpMultiplier;
+        player.vy = jumpDir.y * player.jumpForce * jumpMultiplier;
         player.isGrounded = false;
-        player.jumpCooldown = 0.3;
+
+        // CRITICAL: Grace period prevents immediate re-grounding
+        // The player CANNOT land for 0.35 seconds after jumping
+        player.jumpGraceTimer = 0.35;
+
+        // Immediately move player outward to clear surface threshold
+        player.x += jumpDir.x * (this.surfaceThreshold + 4);
+        player.y += jumpDir.y * (this.surfaceThreshold + 4);
+
+        console.log(`[JUMP] Success. New pos: ${player.x.toFixed(1)}, ${player.y.toFixed(1)}, Vel: ${player.vx.toFixed(1)}, ${player.vy.toFixed(1)}`);
 
         return true;
     }

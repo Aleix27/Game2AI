@@ -1,5 +1,5 @@
 // =============================================
-// Player.js — Astronaut character entity
+// Player.js — Astronaut character entity (rewritten)
 // =============================================
 
 import { Vec2 } from '../engine/Physics.js';
@@ -41,20 +41,23 @@ export class Player {
 
         // Timers
         this.shootCooldown = 0;
-        this.shootCooldownMax = 0.6; // seconds between shots
+        this.shootCooldownMax = 0.35;
         this.damageFlash = 0;
         this.respawnTimer = 0;
-        this.respawnTime = 3; // seconds
-        this.invulnerable = 0; // seconds of invulnerability after spawn
+        this.respawnTime = 3;
+        this.invulnerable = 0;
 
-        // Jump
-        this.jumpForce = 300;
+        // Items
+        this.currentWeapon = 'SHOTGUN';
+
+        // Jump — the key change: jumpGraceTimer prevents re-grounding
+        this.jumpForce = 750;
         this.canJump = true;
-        this.jumpCooldown = 0;
+        this.jumpGraceTimer = 0;    // While > 0, player CANNOT be grounded
 
         // Movement
-        this.moveSpeed = 200; // surface movement speed (degrees/sec basically)
-        this.airControl = 80; // air movement force
+        this.moveSpeed = 320;
+        this.airControl = 150;
     }
 
     /**
@@ -71,8 +74,10 @@ export class Player {
         this.health = this.maxHealth;
         this.alive = true;
         this.damageFlash = 0;
-        this.invulnerable = 2; // 2 seconds invulnerability
+        this.invulnerable = 2;
         this.respawnTimer = 0;
+        this.jumpGraceTimer = 0;
+        this.currentWeapon = 'SHOTGUN'; // Reset weapon on spawn
     }
 
     /**
@@ -98,7 +103,7 @@ export class Player {
     updateTimers(dt) {
         if (this.shootCooldown > 0) this.shootCooldown -= dt;
         if (this.damageFlash > 0) this.damageFlash -= dt * 3;
-        if (this.jumpCooldown > 0) this.jumpCooldown -= dt;
+        if (this.jumpGraceTimer > 0) this.jumpGraceTimer -= dt;
         if (this.invulnerable > 0) this.invulnerable -= dt;
         if (!this.alive && this.respawnTimer > 0) this.respawnTimer -= dt;
     }
@@ -133,7 +138,9 @@ export class Player {
             d: this.deaths,
             df: Math.round(this.damageFlash * 100) / 100,
             rt: Math.round(this.respawnTimer * 100) / 100,
-            iv: this.invulnerable > 0
+            iv: this.invulnerable > 0,
+            aa: Math.round((this.aimAngle || 0) * 100) / 100,
+            cw: this.currentWeapon
         };
     }
 
@@ -156,6 +163,8 @@ export class Player {
         this.damageFlash = data.df;
         this.respawnTimer = data.rt;
         this.invulnerable = data.iv ? 1 : 0;
+        if (data.aa !== undefined) this.aimAngle = data.aa;
+        if (data.cw !== undefined) this.currentWeapon = data.cw;
     }
 
     static fromSerialized(data) {

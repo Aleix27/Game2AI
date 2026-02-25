@@ -1,21 +1,29 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#0a0a1a">
     <meta name="description" content="Interplanetary PvP — Local multiplayer space battle game">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>Interplanetary PvP</title>
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="icon-192.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Exo+2:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Exo+2:wght@300;400;600;700&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="css/styles.css">
 </head>
+
 <body>
     <canvas id="gameCanvas"></canvas>
 
@@ -53,7 +61,8 @@
                     </div>
                 </div>
                 <div id="join-input-area" class="join-area hidden">
-                    <input type="text" id="join-code-input" class="code-input" placeholder="ENTER CODE" maxlength="4" autocomplete="off" autocorrect="off" autocapitalize="characters">
+                    <input type="text" id="join-code-input" class="code-input" placeholder="ENTER CODE" maxlength="4"
+                        autocomplete="off" autocorrect="off" autocapitalize="characters">
                     <button id="btn-connect" class="btn btn-primary btn-small">CONNECT</button>
                 </div>
                 <div class="player-list" id="player-list"></div>
@@ -105,4 +114,5 @@
     <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
     <script type="module" src="js/main.js"></script>
 </body>
+
 </html>

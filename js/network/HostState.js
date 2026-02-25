@@ -5,7 +5,7 @@
 export class HostState {
     constructor(networkManager) {
         this.net = networkManager;
-        this.broadcastRate = 1 / 20; // 20 Hz state broadcast
+        this.broadcastRate = 1 / 60; // 60 Hz state broadcast for maximum fluidity
         this.broadcastTimer = 0;
         this.inputBuffer = new Map(); // peerId -> latest input
     }

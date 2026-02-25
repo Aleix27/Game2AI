@@ -10,9 +10,9 @@ export class Projectile {
         this.vy = vy;
         this.ownerId = ownerId;
         this.color = color;
-        this.radius = 3;
-        this.damage = 20;
-        this.lifetime = 3; // seconds
+        this.radius = 2;
+        this.damage = 15;
+        this.lifetime = 1.5; // seconds
         this.age = 0;
         this.active = true;
     }

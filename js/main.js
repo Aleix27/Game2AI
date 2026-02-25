@@ -12,6 +12,7 @@ import { Planet, generateMap } from './entities/Planet.js';
 import { Player } from './entities/Player.js';
 import { Projectile } from './entities/Projectile.js';
 import { Meteorite } from './entities/Meteorite.js';
+import { Pickup } from './entities/Pickup.js';
 import { ParticlePool } from './entities/Particle.js';
 
 import { GravitySystem } from './systems/GravitySystem.js';
@@ -55,7 +56,9 @@ class Game {
         this.players = [];
         this.projectiles = [];
         this.meteorites = [];
+        this.pickups = [];
         this.particles = new ParticlePool(600);
+        this.pickupSpawnTimer = 0;
 
         // Network
         this.net = new NetworkManager();
@@ -83,11 +86,16 @@ class Game {
         // Game loop
         this.loop = new GameLoop(
             (dt) => this.update(dt),
-            (alpha) => this.render(alpha)
+            (alpha) => this.render(alpha),
+            () => this.postUpdate()
         );
 
         this._bindUI();
         this._bindResize();
+
+        // Cached input for the current frame (sampled once, used across fixed ticks)
+        this._frameInput = null;
+
         this.loop.start();
     }
 
@@ -326,11 +334,18 @@ class Game {
                 break;
 
             case State.PLAYING:
+                // Sample input ONCE per frame (before fixed-step ticks)
+                // This prevents one-shot events from being lost on multi-tick frames
+                if (!this._frameInput) {
+                    this._frameInput = this.input.getInput();
+                }
                 if (this.net.isHost) {
                     this._updateHost(dt);
                 } else {
                     this._updateClient(dt);
                 }
+                // Mark input as consumed after this tick
+                // (the loop may call update again, but we keep the input for all ticks)
                 break;
 
             case State.RANKING:
@@ -338,13 +353,22 @@ class Game {
         }
     }
 
+    /**
+     * Called AFTER all fixed-step ticks for a frame. Clears frame input.
+     */
+    postUpdate() {
+        this._frameInput = null;
+    }
+
     _updateHost(dt) {
         this.gameTime += dt;
         this.matchTimer -= dt;
 
-        // Process local input
-        const localInput = this.input.getInput();
+        // Use cached frame input (sampled once per frame, not per tick)
+        const localInput = this._frameInput || { moveX: 0, moveY: 0, jump: false, shootTarget: null };
         this._processInput(this.players[0], localInput, dt);
+        // Clear one-shot events after first tick processes them
+        // Note: shootTarget and jump are continuous now based on InputManager
 
         // Process remote inputs
         for (const [peerId, playerIdx] of this.peerPlayerMap) {
@@ -354,8 +378,13 @@ class Game {
             }
         }
 
-        // Update gravity for players
+        // Update gravity for players FIRST (before timers, so jumpGraceTimer is still active)
         this.gravity.update(this.players.filter(p => p.alive), this.planets, dt);
+
+        // THEN update timers (cooldowns, invulnerability, jumpGraceTimer, etc.)
+        for (const player of this.players) {
+            player.updateTimers(dt);
+        }
 
         // Update gravity for projectiles
         for (const proj of this.projectiles) {
@@ -387,6 +416,47 @@ class Game {
             met.update(dt);
         }
 
+        // Update pickups (bobbing)
+        for (const pickup of this.pickups) {
+            pickup.update(dt);
+        }
+
+        // Spawn pickups periodically (host only)
+        this.pickupSpawnTimer -= dt;
+        if (this.pickupSpawnTimer <= 0) {
+            this.pickupSpawnTimer = 10; // Every 10 seconds
+            if (this.pickups.filter(p => p.active).length < 5) {
+                const planet = this.planets[Math.floor(Math.random() * this.planets.length)];
+                const angle = Math.random() * Math.PI * 2;
+                const pos = planet.getSurfacePoint(angle);
+                const types = Object.keys(Pickup.PICKUP_TYPES || {}); // Fallback if not static
+                const type = ['HEALTH', 'MACHINE_GUN', 'SNIPER'][Math.floor(Math.random() * 3)];
+                const id = 'pickup_' + Date.now() + '_' + Math.random();
+                // Adjust position to be slightly above planet
+                const dir = new Vec2(pos.x - planet.x, pos.y - planet.y).normalize();
+                const spawnX = planet.x + dir.x * (planet.radius + 30);
+                const spawnY = planet.y + dir.y * (planet.radius + 30);
+                this.pickups.push(new Pickup(id, spawnX, spawnY, type));
+            }
+        }
+
+        // Pickup collisions
+        for (const player of this.players) {
+            if (!player.alive) continue;
+            for (const pickup of this.pickups) {
+                if (!pickup.active) continue;
+                const dist = Math.sqrt((player.x - pickup.x) ** 2 + (player.y - pickup.y) ** 2);
+                if (dist < player.radius + pickup.radius) {
+                    pickup.active = false;
+                    this._handlePickupEffect(player, pickup);
+                    this.hostState.broadcastEvent({ type: 'pickup', playerId: player.id, pickupId: pickup.id, pickupType: pickup.typeKey });
+                }
+            }
+        }
+
+        // Cleanup inactive pickups
+        this.pickups = this.pickups.filter(p => p.active);
+
         // Hazard system (spawn meteorites)
         this.hazards.update(dt, this.meteorites, this.planets);
 
@@ -404,7 +474,15 @@ class Game {
 
         // Respawn dead players
         for (const player of this.players) {
-            player.updateTimers(dt);
+            // Infinite void death check (if player flies too far into infinity)
+            if (player.alive) {
+                const distFromCenter = Math.sqrt(player.x * player.x + player.y * player.y);
+                if (distFromCenter > 2000) { // Void boundary
+                    player.takeDamage(9999, 'void');
+                    this.hud.addKillFeed('The Void', player.name, '#555555');
+                }
+            }
+
             if (!player.alive && player.respawnTimer <= 0) {
                 const spawnPlanet = this.planets[1 + (player.index % (this.planets.length - 1))];
                 const angle = Math.random() * Math.PI * 2;
@@ -446,8 +524,8 @@ class Game {
     _updateClient(dt) {
         this.gameTime += dt;
 
-        // Send local input
-        const localInput = this.input.getInput();
+        // Send local input (use cached frame input)
+        const localInput = this._frameInput || { moveX: 0, moveY: 0, jump: false, shootTarget: null };
         if (localInput.shootTarget) {
             // Convert screen coords to world coords for the shoot target
             const world = this.camera.screenToWorld(localInput.shootTarget.x, localInput.shootTarget.y);
@@ -489,6 +567,16 @@ class Game {
             }
         }
 
+        // Continuous aim tracking (update arm direction toward mouse/touch)
+        if (input.aimTarget && this.net.isHost && player.index === 0) {
+            // Host local: convert screen to world
+            const world = this.camera.screenToWorld(input.aimTarget.x, input.aimTarget.y);
+            this._updateAim(player, world.x, world.y);
+        } else if (input.aimTarget) {
+            // Client input already in world coords
+            this._updateAim(player, input.aimTarget.x, input.aimTarget.y);
+        }
+
         // Shoot
         if (input.shootTarget) {
             let targetX, targetY;
@@ -503,9 +591,26 @@ class Game {
                 targetY = input.shootTarget.y;
             }
 
+            // Update aim angle before firing
+            this._updateAim(player, targetX, targetY);
+
             const newProjs = this.weapons.fire(player, targetX, targetY, this.particles);
             this.projectiles.push(...newProjs);
         }
+    }
+
+    /**
+     * Update player aim direction (for arm rendering)
+     */
+    _updateAim(player, worldX, worldY) {
+        const dx = worldX - player.x;
+        const dy = worldY - player.y;
+        const worldAngle = Math.atan2(dy, dx);
+        // Convert to player's local frame (renderer rotates by surfaceAngle + PI/2)
+        player.aimAngle = worldAngle - player.surfaceAngle - Math.PI / 2;
+        // Flip facing based on aim
+        if (Math.cos(player.aimAngle) < 0 && !player.facingLeft) player.facingLeft = true;
+        if (Math.cos(player.aimAngle) > 0 && player.facingLeft) player.facingLeft = false;
     }
 
     _serializeGameState() {
@@ -547,6 +652,18 @@ class Game {
         }
     }
 
+    _handlePickupEffect(player, pickup) {
+        if (pickup.typeKey === 'HEALTH') {
+            player.health = Math.min(player.maxHealth, player.health + 40);
+            this.particles.explosion(pickup.x, pickup.y, '#00ff88', 15);
+        } else {
+            // Weapon pickups
+            player.currentWeapon = pickup.typeKey;
+            this.particles.explosion(pickup.x, pickup.y, pickup.type.color, 15);
+            console.log(`${player.name} picked up ${pickup.typeKey}`);
+        }
+    }
+
     _handleGameEvent(event) {
         switch (event.type) {
             case 'kill':
@@ -559,7 +676,15 @@ class Game {
                 this.camera.shake(8, 0.4);
                 break;
             case 'hit':
-                this.camera.shake(3, 0.15);
+                this.particles.impact(event.x, event.y, event.color || '#ffffff');
+                break;
+            case 'pickup':
+                const p = this.players.find(pl => pl.id === event.playerId);
+                if (p) p.currentWeapon = event.pickupType;
+                // Find and hide pickup if exists locally
+                const pickup = this.pickups.find(pk => pk.id === event.pickupId);
+                if (pickup) pickup.active = false;
+                this.particles.explosion(event.x || 0, event.y || 0, '#ffffff', 10);
                 break;
             case 'meteorite_impact':
                 this.camera.shake(5, 0.3);
@@ -640,6 +765,13 @@ class Game {
                 this.renderer.drawPlanet(planet);
             }
 
+            // Draw pickups
+            for (const pickup of this.pickups) {
+                if (pickup.active) {
+                    this.renderer.drawPickup(pickup);
+                }
+            }
+
             // Draw projectiles
             for (const proj of this.projectiles) {
                 if (proj.active !== false) {
@@ -674,11 +806,6 @@ class Game {
 
 // ---- Bootstrap ----
 window.addEventListener('DOMContentLoaded', () => {
-    // Register service worker
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/sw.js').catch(() => { });
-    }
-
     // Force landscape hint
     if (screen.orientation && screen.orientation.lock) {
         screen.orientation.lock('landscape').catch(() => { });

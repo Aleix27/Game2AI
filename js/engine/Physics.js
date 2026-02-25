@@ -61,8 +61,8 @@ export class Vec2 {
 }
 
 export const Physics = {
-    GRAVITY_CONSTANT: 800,
-    MAX_VELOCITY: 600,
+    GRAVITY_CONSTANT: 2200,
+    MAX_VELOCITY: 800,
     SURFACE_OFFSET: 2,
 
     /**
@@ -76,7 +76,7 @@ export const Physics = {
         if (dist < planet.radius * 0.5) return new Vec2(0, 0);
 
         const force = (this.GRAVITY_CONSTANT * planet.mass) / distSq;
-        return diff.normalize().scale(Math.min(force, 2000));
+        return diff.normalize().scale(Math.min(force, 3500));
     },
 
     /**

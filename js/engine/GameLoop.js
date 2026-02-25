@@ -3,9 +3,10 @@
 // =============================================
 
 export class GameLoop {
-    constructor(updateFn, renderFn) {
+    constructor(updateFn, renderFn, postUpdateFn = null) {
         this.update = updateFn;
         this.render = renderFn;
+        this.postUpdate = postUpdateFn;
         this.running = false;
         this.rafId = null;
         this.lastTime = 0;
@@ -50,6 +51,9 @@ export class GameLoop {
             this.update(this.fixedDt);
             this.accumulator -= this.fixedDt;
         }
+
+        // Post-update: clear per-frame state (like consumed input)
+        if (this.postUpdate) this.postUpdate();
 
         // Interpolation alpha for rendering
         const alpha = this.accumulator / this.fixedDt;

@@ -244,7 +244,7 @@ export class Renderer {
         // Arm with gun
         ctx.save();
         ctx.translate(8, -1 + bobY);
-        const gunAngle = player.isGrounded ? 0.2 : (player.aimAngle || 0);
+        const gunAngle = player.aimAngle !== undefined ? player.aimAngle : 0.2;
         ctx.rotate(gunAngle);
         // Arm
         ctx.fillStyle = pColor;
@@ -396,6 +396,51 @@ export class Renderer {
         ctx.lineWidth = 2;
         ctx.stroke();
         ctx.globalAlpha = 1;
+
+        ctx.restore();
+    }
+
+    // ---- Pickup ----
+    drawPickup(pickup) {
+        const ctx = this.ctx;
+        ctx.save();
+
+        // Bobbing effect
+        const bob = Math.sin(pickup.time) * 5;
+        ctx.translate(pickup.x, pickup.y + bob);
+
+        // Glow
+        const glowRadius = pickup.radius * 2;
+        const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, glowRadius);
+        grad.addColorStop(0, pickup.type.color + '44');
+        grad.addColorStop(1, 'transparent');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(0, 0, glowRadius, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Hexagon background
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+        ctx.strokeStyle = pickup.type.color;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        for (let i = 0; i < 6; i++) {
+            const angle = (Math.PI / 3) * i;
+            const px = Math.cos(angle) * pickup.radius;
+            const py = Math.sin(angle) * pickup.radius;
+            if (i === 0) ctx.moveTo(px, py);
+            else ctx.lineTo(px, py);
+        }
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        // Icon
+        ctx.fillStyle = pickup.type.color;
+        ctx.font = 'bold 16px Orbitron';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(pickup.type.icon, 0, 0);
 
         ctx.restore();
     }

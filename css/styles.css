@@ -3,7 +3,13 @@
    ============================================= */
 
 /* --- Reset & Base --- */
-*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+*,
+*::before,
+*::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
 
 :root {
     --bg-deep: #0a0a1a;
@@ -31,8 +37,10 @@
     --p4-color: #ff3366;
 }
 
-html, body {
-    width: 100%; height: 100%;
+html,
+body {
+    width: 100%;
+    height: 100%;
     overflow: hidden;
     background: var(--bg-deep);
     font-family: var(--font-body);
@@ -47,8 +55,10 @@ html, body {
 /* --- Canvas --- */
 #gameCanvas {
     position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
     display: block;
     background: var(--bg-deep);
 }
@@ -56,24 +66,29 @@ html, body {
 /* --- UI Layer --- */
 #ui-layer {
     position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
     pointer-events: none;
     z-index: 10;
 }
 
 .screen {
     position: absolute;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
     display: none;
     align-items: center;
     justify-content: center;
     pointer-events: none;
 }
+
 .screen.active {
     display: flex;
-    pointer-events: auto;
+    /* We don't want all active screens to block clicks. Specifically HUD must not. */
 }
 
 /* --- Menu Screen --- */
@@ -140,23 +155,28 @@ html, body {
     position: relative;
     overflow: hidden;
     min-width: 260px;
+    pointer-events: auto;
 }
 
 .btn::before {
     content: '';
     position: absolute;
     inset: 0;
-    background: linear-gradient(135deg, rgba(255,255,255,0.15), transparent);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), transparent);
     opacity: 0;
     transition: opacity var(--transition-fast);
 }
-.btn:active::before { opacity: 1; }
+
+.btn:active::before {
+    opacity: 1;
+}
 
 .btn-primary {
     background: linear-gradient(135deg, var(--accent-primary), #0099cc);
     color: #fff;
-    box-shadow: var(--glow-primary), inset 0 1px 0 rgba(255,255,255,0.2);
+    box-shadow: var(--glow-primary), inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
+
 .btn-primary:active {
     transform: scale(0.96);
     box-shadow: 0 0 30px rgba(0, 212, 255, 0.6);
@@ -168,6 +188,7 @@ html, body {
     border: 1px solid rgba(0, 212, 255, 0.3);
     backdrop-filter: blur(10px);
 }
+
 .btn-secondary:active {
     transform: scale(0.96);
     border-color: var(--accent-primary);
@@ -179,12 +200,29 @@ html, body {
     border: 1px solid rgba(255, 51, 102, 0.3);
 }
 
-.btn-small { padding: 0.6rem 1.5rem; min-width: 140px; font-size: 0.75rem; }
-.btn-large { padding: 1.2rem 3rem; min-width: 300px; font-size: 1.1rem; }
+.btn-small {
+    padding: 0.6rem 1.5rem;
+    min-width: 140px;
+    font-size: 0.75rem;
+}
 
-.btn-icon { font-size: 1.3em; }
+.btn-large {
+    padding: 1.2rem 3rem;
+    min-width: 300px;
+    font-size: 1.1rem;
+}
+
+.btn-icon {
+    font-size: 1.3em;
+}
 
 /* --- Lobby Screen --- */
+#lobby-screen.active,
+#menu-screen.active,
+#ranking-screen.active {
+    pointer-events: auto;
+}
+
 .lobby-container {
     background: var(--bg-panel);
     border: 1px solid rgba(0, 212, 255, 0.15);
@@ -257,7 +295,11 @@ html, body {
     outline: none;
     transition: border-color var(--transition-fast);
 }
-.code-input:focus { border-color: var(--accent-primary); }
+
+.code-input:focus {
+    border-color: var(--accent-primary);
+}
+
 .code-input::placeholder {
     font-size: 0.8rem;
     letter-spacing: 0.2em;
@@ -289,7 +331,8 @@ html, body {
 }
 
 .player-dot {
-    width: 12px; height: 12px;
+    width: 12px;
+    height: 12px;
     border-radius: 50%;
     flex-shrink: 0;
 }
@@ -326,6 +369,7 @@ html, body {
 #countdown-overlay {
     background: rgba(0, 0, 0, 0.7);
     z-index: 50;
+    pointer-events: none;
 }
 
 .countdown-number {
@@ -341,7 +385,11 @@ html, body {
 #hud {
     pointer-events: none;
 }
-#hud.active { pointer-events: none; display: flex; }
+
+#hud.active {
+    display: flex;
+    pointer-events: none;
+}
 
 .hud-top {
     position: absolute;
@@ -479,10 +527,12 @@ html, body {
     background: rgba(255, 215, 0, 0.1);
     border: 1px solid rgba(255, 215, 0, 0.3);
 }
+
 .ranking-entry:nth-child(2) {
     background: rgba(192, 192, 192, 0.1);
     border: 1px solid rgba(192, 192, 192, 0.2);
 }
+
 .ranking-entry:nth-child(3) {
     background: rgba(205, 127, 50, 0.1);
     border: 1px solid rgba(205, 127, 50, 0.2);
@@ -539,12 +589,18 @@ html, body {
 /* --- Virtual Controls --- */
 #controls-layer {
     position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
     z-index: 20;
     pointer-events: none;
 }
-#controls-layer.active { pointer-events: auto; display: block; }
+
+#controls-layer.active {
+    pointer-events: none;
+    display: block;
+}
 
 .joystick-zone {
     position: absolute;
@@ -557,18 +613,21 @@ html, body {
 
 .joystick-base {
     position: absolute;
-    width: 120px; height: 120px;
+    width: 120px;
+    height: 120px;
     border-radius: 50%;
     background: rgba(255, 255, 255, 0.08);
     border: 2px solid rgba(0, 212, 255, 0.25);
-    bottom: 0; left: 0;
+    bottom: 0;
+    left: 0;
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
 .joystick-thumb {
-    width: 44px; height: 44px;
+    width: 44px;
+    height: 44px;
     border-radius: 50%;
     background: radial-gradient(circle, rgba(0, 212, 255, 0.5), rgba(0, 212, 255, 0.2));
     border: 2px solid rgba(0, 212, 255, 0.6);
@@ -592,67 +651,147 @@ html, body {
 .jump-btn {
     bottom: 30px;
     right: 30px;
-    width: 70px; height: 70px;
+    width: 70px;
+    height: 70px;
     background: radial-gradient(circle, rgba(0, 255, 136, 0.35), rgba(0, 255, 136, 0.1));
     border: 2px solid rgba(0, 255, 136, 0.4);
     color: rgba(0, 255, 136, 0.9);
     box-shadow: 0 0 20px rgba(0, 255, 136, 0.2);
 }
+
 .jump-btn:active {
     transform: scale(0.9);
     background: radial-gradient(circle, rgba(0, 255, 136, 0.5), rgba(0, 255, 136, 0.15));
 }
 
 /* --- Utilities --- */
-.hidden { display: none !important; }
+.hidden {
+    display: none !important;
+}
 
 /* --- Animations --- */
 @keyframes fadeInUp {
-    from { opacity: 0; transform: translateY(30px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 @keyframes titlePulse {
-    0%, 100% { filter: drop-shadow(0 0 30px rgba(0, 212, 255, 0.3)); }
-    50% { filter: drop-shadow(0 0 50px rgba(0, 212, 255, 0.6)); }
+
+    0%,
+    100% {
+        filter: drop-shadow(0 0 30px rgba(0, 212, 255, 0.3));
+    }
+
+    50% {
+        filter: drop-shadow(0 0 50px rgba(0, 212, 255, 0.6));
+    }
 }
 
 @keyframes pulse {
-    0%, 100% { opacity: 0.7; }
-    50% { opacity: 1; }
+
+    0%,
+    100% {
+        opacity: 0.7;
+    }
+
+    50% {
+        opacity: 1;
+    }
 }
 
 @keyframes countdownPop {
-    0% { transform: scale(2); opacity: 0; }
-    50% { transform: scale(0.9); opacity: 1; }
-    100% { transform: scale(1); }
+    0% {
+        transform: scale(2);
+        opacity: 0;
+    }
+
+    50% {
+        transform: scale(0.9);
+        opacity: 1;
+    }
+
+    100% {
+        transform: scale(1);
+    }
 }
 
 @keyframes killSlideIn {
-    from { opacity: 0; transform: translateX(50px); }
-    to { opacity: 1; transform: translateX(0); }
+    from {
+        opacity: 0;
+        transform: translateX(50px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
 }
 
 @keyframes rankSlideIn {
-    from { opacity: 0; transform: translateX(-30px); }
-    to { opacity: 1; transform: translateX(0); }
+    from {
+        opacity: 0;
+        transform: translateX(-30px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
 }
 
 /* Delay ranking entries */
-.ranking-entry:nth-child(1) { animation-delay: 0.1s; }
-.ranking-entry:nth-child(2) { animation-delay: 0.3s; }
-.ranking-entry:nth-child(3) { animation-delay: 0.5s; }
-.ranking-entry:nth-child(4) { animation-delay: 0.7s; }
+.ranking-entry:nth-child(1) {
+    animation-delay: 0.1s;
+}
+
+.ranking-entry:nth-child(2) {
+    animation-delay: 0.3s;
+}
+
+.ranking-entry:nth-child(3) {
+    animation-delay: 0.5s;
+}
+
+.ranking-entry:nth-child(4) {
+    animation-delay: 0.7s;
+}
 
 /* --- Responsive --- */
 @media (max-height: 500px) {
-    .lobby-container { padding: 1rem 2rem; }
-    .room-code { font-size: 2rem; }
-    .btn { padding: 0.7rem 1.8rem; min-width: 200px; }
-    .ranking-container { padding: 1rem 2rem; min-width: 350px; }
+    .lobby-container {
+        padding: 1rem 2rem;
+    }
+
+    .room-code {
+        font-size: 2rem;
+    }
+
+    .btn {
+        padding: 0.7rem 1.8rem;
+        min-width: 200px;
+    }
+
+    .ranking-container {
+        padding: 1rem 2rem;
+        min-width: 350px;
+    }
 }
 
 @media (max-width: 480px) {
-    .menu-buttons { flex-direction: column; }
-    .lobby-container, .ranking-container { min-width: unset; width: 90%; }
+    .menu-buttons {
+        flex-direction: column;
+    }
+
+    .lobby-container,
+    .ranking-container {
+        min-width: unset;
+        width: 90%;
+    }
 }

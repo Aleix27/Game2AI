@@ -128,27 +128,35 @@ export function generateMap(playerCount) {
     const planets = [];
     const themes = [...THEME_KEYS];
 
-    // Central large planet
-    planets.push(new Planet(0, 0, 120, themes[0]));
+    // Core planets (Binary system)
+    planets.push(new Planet(-150, 0, 140, 'lava'));
+    planets.push(new Planet(150, 0, 140, 'ice'));
 
-    // Surrounding planets
-    const orbitRadius = 400;
-    const numOrbiting = Math.max(playerCount + 1, 4);
-
-    for (let i = 0; i < numOrbiting; i++) {
-        const angle = (Math.PI * 2 / numOrbiting) * i + Math.random() * 0.3;
-        const dist = orbitRadius + Math.random() * 100 - 50;
-        const radius = 50 + Math.random() * 40;
-        const x = Math.cos(angle) * dist;
-        const y = Math.sin(angle) * dist;
-        planets.push(new Planet(x, y, radius, themes[(i + 1) % themes.length]));
+    // Inner ring
+    const innerRadius = 500;
+    const numInner = 4;
+    for (let i = 0; i < numInner; i++) {
+        const angle = (Math.PI * 2 / numInner) * i + Math.random() * 0.5;
+        const x = Math.cos(angle) * innerRadius;
+        const y = Math.sin(angle) * innerRadius;
+        planets.push(new Planet(x, y, 70 + Math.random() * 20, themes[(i + 2) % themes.length]));
     }
 
-    // Some smaller distant planets
-    for (let i = 0; i < 3; i++) {
+    // Outer ring
+    const outerRadius = 900;
+    const numOuter = Math.max(playerCount + 2, 6);
+    for (let i = 0; i < numOuter; i++) {
+        const angle = (Math.PI * 2 / numOuter) * i + Math.random() * 0.3;
+        const x = Math.cos(angle) * outerRadius;
+        const y = Math.sin(angle) * outerRadius;
+        planets.push(new Planet(x, y, 50 + Math.random() * 30, themes[i % themes.length]));
+    }
+
+    // Dotted small moons
+    for (let i = 0; i < 7; i++) {
         const angle = Math.random() * Math.PI * 2;
-        const dist = orbitRadius * 1.5 + Math.random() * 200;
-        const radius = 30 + Math.random() * 25;
+        const dist = 300 + Math.random() * 800;
+        const radius = 25 + Math.random() * 15;
         planets.push(new Planet(
             Math.cos(angle) * dist,
             Math.sin(angle) * dist,
