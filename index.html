@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#0a0a1a">
+    <meta name="description" content="Interplanetary PvP — Local multiplayer space battle game">
+    <title>Interplanetary PvP</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Exo+2:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <canvas id="gameCanvas"></canvas>
+
+    <!-- UI Overlays -->
+    <div id="ui-layer">
+        <!-- Menu Screen -->
+        <div id="menu-screen" class="screen active">
+            <div class="menu-container">
+                <div class="game-title">
+                    <h1>INTERPLANETARY</h1>
+                    <h2>PvP</h2>
+                    <div class="title-subtitle">Local Multiplayer Space Battle</div>
+                </div>
+                <div class="menu-buttons">
+                    <button id="btn-host" class="btn btn-primary">
+                        <span class="btn-icon">🚀</span>
+                        <span class="btn-text">CREATE GAME</span>
+                    </button>
+                    <button id="btn-join" class="btn btn-secondary">
+                        <span class="btn-icon">🛸</span>
+                        <span class="btn-text">JOIN GAME</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lobby Screen -->
+        <div id="lobby-screen" class="screen">
+            <div class="lobby-container">
+                <div class="lobby-header">
+                    <h2 id="lobby-title">GAME LOBBY</h2>
+                    <div class="room-code-display">
+                        <span class="room-label">ROOM CODE</span>
+                        <span id="room-code" class="room-code">----</span>
+                    </div>
+                </div>
+                <div id="join-input-area" class="join-area hidden">
+                    <input type="text" id="join-code-input" class="code-input" placeholder="ENTER CODE" maxlength="4" autocomplete="off" autocorrect="off" autocapitalize="characters">
+                    <button id="btn-connect" class="btn btn-primary btn-small">CONNECT</button>
+                </div>
+                <div class="player-list" id="player-list"></div>
+                <div class="lobby-actions">
+                    <button id="btn-start" class="btn btn-primary btn-large hidden">START BATTLE</button>
+                    <button id="btn-leave" class="btn btn-danger btn-small">LEAVE</button>
+                </div>
+                <div id="lobby-status" class="lobby-status">Waiting for players...</div>
+            </div>
+        </div>
+
+        <!-- Countdown Overlay -->
+        <div id="countdown-overlay" class="screen">
+            <div class="countdown-number" id="countdown-number">3</div>
+        </div>
+
+        <!-- HUD (visible during gameplay) -->
+        <div id="hud" class="screen">
+            <div class="hud-top">
+                <div class="match-timer" id="match-timer">3:00</div>
+            </div>
+            <div class="hud-player-info" id="hud-player-info"></div>
+            <div class="kill-feed" id="kill-feed"></div>
+        </div>
+
+        <!-- Ranking Screen -->
+        <div id="ranking-screen" class="screen">
+            <div class="ranking-container">
+                <h2 class="ranking-title">MATCH RESULTS</h2>
+                <div class="ranking-list" id="ranking-list"></div>
+                <div class="ranking-actions">
+                    <button id="btn-rematch" class="btn btn-primary">REMATCH</button>
+                    <button id="btn-menu" class="btn btn-secondary">MAIN MENU</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Virtual Controls -->
+    <div id="controls-layer" class="hidden">
+        <div id="joystick-zone" class="joystick-zone">
+            <div id="joystick-base" class="joystick-base">
+                <div id="joystick-thumb" class="joystick-thumb"></div>
+            </div>
+        </div>
+        <button id="btn-jump" class="action-btn jump-btn">JUMP</button>
+    </div>
+
+    <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>
